@@ -4,9 +4,14 @@
 Mako is a bare-bones web server written entirely in C. It can serve HTML, CSS, and theoretically .js, .png, .jpeg and even .mp4 files (these haven't been entirely tested yet). 
 ### Compilation
 First, clone the main.c file from the repository into a new folder.
-I've used GCC to compile the project throughout, so I'd recommend using that to avoid any compiler specific bugs
 ```
-gcc -o mako main.c
+> git clone https://github.com/ccynth1a/Mako.git
+
+> cd Mako
+```
+I've used GCC to compile the project throughout, so I'd recommend using that to avoid any compiler specific bugs/features
+```
+> gcc -o mako main.c
 ```
 ### Usage
 Place all necessary files for the website's functioning in a directory, for example:
