@@ -16,7 +16,8 @@
 int socket_file_descriptor = 0, connection_socket_file_descriptor = 0; //Set them to zero to flag them as uninitialised for the next function
 
 //When SIGINT is called, close all open File Descriptors and exit the program
-void sigint_handler(int sig) {
+void sigint_handler(int sig)
+{
   int status1, status2;
   if (socket_file_descriptor == 0) {
     status1 = close(socket_file_descriptor);
@@ -34,9 +35,10 @@ void sigint_handler(int sig) {
 } 
 
 // Is this yuri?????
-char* strip_uri(char* uri) {
+char *strip_uri(char *uri)
+{
   size_t len = strlen(uri);
-  char* stripped_uri = malloc(len);
+  char *stripped_uri = malloc(len);
   for (int i = 1;i < len;i++) {
     stripped_uri[i-1] = uri[i];
   }
@@ -50,20 +52,21 @@ char* strip_uri(char* uri) {
 // - Read file extension, then formulate a header 
 // - Funky shit sending the bytes 
 // - Close the file descriptor
-void respond(const char* file_path) {
+void respond(const char *file_path)
+{
   int file_descriptor = open(file_path, O_RDONLY); //Open a file in read only mode
   if (file_descriptor == -1) { //If Error, respond with 404, since its just the file not existing
     printf("ERROR: (FILE NOT FOUND)\n");
-    const char* header =  "HTTP/1.0 404 Not Found\r\n"
+    const char *header =  "HTTP/1.0 404 Not Found\r\n"
                           "Server: webserver-c\r\n"
                           "Content-type: text/html\r\n";
-    const char* body = "<html><body>404 Not Found</body></html>\r\n";
+    const char *body = "<html><body>404 Not Found</body></html>\r\n";
     write(connection_socket_file_descriptor, header, strlen(header));
     write(connection_socket_file_descriptor, body, strlen(body));
   } 
   // Figuring out the content type
-  const char* file_extension = strrchr(file_path, '.'); //Extract the file extension
-  const char* content_type;
+  const char *file_extension = strrchr(file_path, '.'); //Extract the file extension
+  const char *content_type;
   if (strcmp(file_extension, ".html") == 0) { // TODO: Make this NOT a mess. For now its ordered from what's probably most-least common
     content_type = "text/html";
   } else if (strcmp(file_extension, ".css") == 0) {
@@ -106,7 +109,8 @@ void respond(const char* file_path) {
 }
 
 //Define host protocol information, bind, and listen
-void init(struct sockaddr_in* host_addr, size_t host_addrlen) {
+void init(struct sockaddr_in* host_addr, size_t host_addrlen) 
+{
   //Define information relating to the host machine
   host_addr->sin_family = AF_INET;
   host_addr->sin_port = htons(PORT); //Converts to network port order 
@@ -193,7 +197,7 @@ int main(int argc, char *argv[])
     if (strcmp(uri, "/") == 0) {
       respond("index.html");
     } else { 
-      char* stripped_uri = strip_uri(uri);
+      char *stripped_uri = strip_uri(uri);
       respond(stripped_uri);
       free(stripped_uri);
     } 
