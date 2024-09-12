@@ -12,6 +12,14 @@
 #define PORT 8080 //Defines the port being used as the tcp port
 #define BUFFER_SIZE 1024 //Buffer used throughout, so standardizing the value here
 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
 //Global Vars
 int socket_file_descriptor = 0, connection_socket_file_descriptor = 0; //Set them to zero to flag them as uninitialised for the next function
 
@@ -26,7 +34,9 @@ void sigint_handler(int sig)
     status2 = close(connection_socket_file_descriptor);
   }
   if (status1 == -1 || status2 == -1) {
-    perror("ERROR: (CLOSE)");
+    char *error_msg;
+    sprintf(error_msg, "%sERROR: (CLOSE)%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+    perror(error_msg);
     exit(1);
   }
   printf("\nSIGINT, files closed successfully\n");
@@ -56,7 +66,7 @@ void respond(const char *file_path)
 {
   int file_descriptor = open(file_path, O_RDONLY); //Open a file in read only mode
   if (file_descriptor == -1) { //If Error, respond with 404, since its just the file not existing
-    printf("ERROR: (FILE NOT FOUND)\n");
+    printf("%sERROR: (FILE NOT FOUND)\n%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
     const char *header =  "HTTP/1.0 404 Not Found\r\n"
                           "Server: webserver-c\r\n"
                           "Content-type: text/html\r\n";
@@ -99,12 +109,14 @@ void respond(const char *file_path)
   while ((bytes_r = read(file_descriptor, buffer, sizeof(buffer))) > 0) { //Will continue as long as there are bytes to send
     bytes_s = write(connection_socket_file_descriptor, buffer, bytes_r); //Write the contents of the file
     if (bytes_s < 0) {
-      perror("ERROR: (WRITE)");
+      char *error_msg;
+      sprintf(error_msg, "%sERROR: (WRITE)%s", ANSI_COLOR_RED, ANSI_COLOR_RESET); //format error message
+      perror(error_msg);
       close(file_descriptor);
       return;
     }
   }
-  printf("Finished serving %s, closing file descriptor\n", file_path);
+  printf("%sFinished serving %s, closing file descriptor%s\n", ANSI_COLOR_GREEN, file_path, ANSI_COLOR_RESET);
   close(file_descriptor);
 }
 
@@ -119,17 +131,21 @@ void init(struct sockaddr_in* host_addr, size_t host_addrlen)
 
   //Bind the socket 
   if (bind(socket_file_descriptor, (struct sockaddr*)host_addr, host_addrlen) != 0) {
-      perror("ERROR: (SOCKET BIND)");
+      char *error_msg;
+      sprintf(error_msg, "%sERROR: (SOCKET BIND)%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+      perror(error_msg);
       exit(1);
   }
-  printf("Bound on Port 8080\n");
+  printf("%sBound on Port 8080\n%s", ANSI_COLOR_GREEN, ANSI_COLOR_RESET);
                                                                                                                                          
   if (listen(socket_file_descriptor, SOMAXCONN) != 0) { //SOMAXCONN is the max number of connections that can be queued, default is 128 
-    perror("ERROR: (LISTEN)");
+    char *error_msg;
+    sprintf(error_msg, "%sERROR: (LISTEN)%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+    perror(error_msg);
     exit(1);
   }
   //Now that we're listening, potential connections will build up in a queue
-  printf("Listening on Port 8080...\n");
+  printf("%sListening on Port 8080...\n%s", ANSI_COLOR_GREEN, ANSI_COLOR_RESET);
 }
 
 int main(int argc, char *argv[])
@@ -138,9 +154,11 @@ int main(int argc, char *argv[])
   //File descriptor: Integer identifier to a file
   socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0); //Create IPv4 TCP Socket
   if (socket_file_descriptor != -1) {
-    printf("Socket file descriptor created successfully\n");
+    printf("%sSocket file descriptor created successfully\n%s", ANSI_COLOR_GREEN, ANSI_COLOR_RESET);
   } else {
-    perror("ERROR: (SOCKET FD CREATE)");
+    char *error_msg;
+    sprintf(error_msg, "%sERROR: (SOCKET FD CREATE)%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+    perror(error_msg);
     return 1;
   }
 
@@ -162,17 +180,21 @@ int main(int argc, char *argv[])
     //Create a new socket to accept the incoming connection
     connection_socket_file_descriptor = accept(socket_file_descriptor, (struct sockaddr*)&host_addr, (socklen_t *)&host_addrlen);
     if (connection_socket_file_descriptor < 0) {
-      perror("ERROR: (CONNECTION ACCEPT)");
+      char *error_msg;
+      sprintf(error_msg, "%sERROR: (CONNECTION ACCEPT)\n%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+      perror(error_msg);
       //Reset the loop and handle the next client
       continue;
     }
-    printf("Accepted TCP Connection\n");
+    printf("%sAccepted TCP Connection\n%s", ANSI_COLOR_GREEN, ANSI_COLOR_RESET);
 
     //Get client information before reading
     int socket_name = getsockname(connection_socket_file_descriptor, (struct sockaddr*)&client_addr, (socklen_t*)&client_addrlen);
     //It might be empty for some reason
     if (socket_name < 0) {
-      perror("ERROR: (SOCKET NAME)");
+      char *error_msg;
+      sprintf(error_msg, "%sERROR: (SOCKET NAME)\n%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+      perror(error_msg);
     }
 
     //Now time to read the request
@@ -189,7 +211,9 @@ int main(int argc, char *argv[])
            "%s %s %s\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), method, version, uri);
 
     if (read_status < 0) {
-      perror("ERROR: (READ REQUEST)");
+      char *error_msg;
+      sprintf(error_msg, "%sERROR: (READ REQUEST)\n%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+      perror(error_msg);
       continue; //If i cant read your request, you're getting skipped
     }
  
