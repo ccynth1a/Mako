@@ -1,4 +1,4 @@
-# Mako V1.0.2
+# Mako V1.0.4
 
 ### Description
 Mako is a bare-bones web server written entirely in C. It can serve HTML, CSS, and theoretically .js, .png, .jpeg and even .mp4 files (these haven't been entirely tested yet). 
@@ -25,6 +25,11 @@ Then simply run the executable, and the server should be created, waiting to ser
 Port Number is configurable using the -p flag
 ```
 > ./mako -p 8080
+```
+
+Verbose Printing can be configured using the -v flag. Verbose printing will include HTTP headers, content type, and other relevant information. Generally not needed.
+```
+> ./mako -v
 ```
 ### Issues
 If you have any issues with it, please don't make PRs, but please feel free to contact me

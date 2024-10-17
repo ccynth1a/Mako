@@ -20,9 +20,16 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
+struct configuration {
+  int PORT;
+  bool VERBOSE;
+};
 //Global Vars
 int socket_file_descriptor = 0, connection_socket_file_descriptor = 0; //Set them to zero to flag them as uninitialised for the next function
-int PORT;
+
+// set up a configuration struct
+struct configuration config;
+
 
 //When SIGINT is called, close all open File Descriptors and exit the program
 void sigint_handler(int sig)
@@ -72,6 +79,10 @@ void respond(const char *file_path)
                           "Server: webserver-c\r\n"
                           "Content-type: text/html\r\n";
     const char *body = "<html><body>404 Not Found</body></html>\r\n";
+
+    if (config.VERBOSE) {
+      printf("%s%s\n", header, body);
+    }
     write(connection_socket_file_descriptor, header, strlen(header));
     write(connection_socket_file_descriptor, body, strlen(body));
   } 
@@ -97,12 +108,18 @@ void respond(const char *file_path)
   } else {
     content_type = "application/octet-stream"; //Default to binary stream if no appropriate delivery method
   }
+  if (config.VERBOSE) {
+    printf("Content Type: %s\n", content_type);
+  }
   // File has been found successfully and content type has been worked out, create the header and prepare to send the file
   char header[BUFFER_SIZE];
   snprintf(header, sizeof(header), 
                         "HTTP/1.0 200 OK\r\n"
                         "Server: webserver-c\r\n"
                         "Content-type: %s\r\n\r\n", content_type);
+  if (config.VERBOSE) {
+    printf("%s\n", header);
+  }
   write(connection_socket_file_descriptor, header, strlen(header));
   
   char buffer[BUFFER_SIZE]; //Create buffer for sending the data
@@ -126,7 +143,7 @@ void init(struct sockaddr_in* host_addr, size_t host_addrlen)
 {
   //Define information relating to the host machine
   host_addr->sin_family = AF_INET;
-  host_addr->sin_port = htons(PORT); //Converts to network port order 
+  host_addr->sin_port = htons(config.PORT); //Converts to network port order 
   host_addr->sin_addr.s_addr = htonl(INADDR_ANY); // host to network long
   // INADDR_ANY is just 0.0.0.0, ie all local IP addresses
 
@@ -137,7 +154,7 @@ void init(struct sockaddr_in* host_addr, size_t host_addrlen)
       perror(error_msg);
       exit(1);
   }
-  printf("%sBound on Port %d\n%s", ANSI_COLOR_GREEN, PORT, ANSI_COLOR_RESET);
+  printf("%sBound on Port %d\n%s", ANSI_COLOR_GREEN, config.PORT, ANSI_COLOR_RESET);
                                                                                                                                          
   if (listen(socket_file_descriptor, SOMAXCONN) != 0) { //SOMAXCONN is the max number of connections that can be queued, default is 128 
     char error_msg[1024];
@@ -146,20 +163,26 @@ void init(struct sockaddr_in* host_addr, size_t host_addrlen)
     exit(1);
   }
   //Now that we're listening, potential connections will build up in a queue
-  printf("%sListening on Port %d...\n%s", ANSI_COLOR_GREEN, PORT, ANSI_COLOR_RESET);
+  printf("%sListening on Port %d...\n%s", ANSI_COLOR_GREEN, config.PORT, ANSI_COLOR_RESET);
 }
 
 int main(int argc, char *argv[])
 {
+  // set configuration defaults 
+  config.VERBOSE = false;  
+
   /* ARG PARSING */ 
   if (argc >= 2) {
     while (true) {
-      int opt = getopt(argc, argv, "p:");
+      int opt = getopt(argc, argv, "p:v");
       if (opt == -1) 
         break;
       switch (opt) {
         case 'p':
-          PORT = atoi(optarg);
+          config.PORT = atoi(optarg);
+          break;
+        case 'v':
+          config.VERBOSE = true;
           break;
         default:
           char error_msg[1024];
@@ -169,10 +192,7 @@ int main(int argc, char *argv[])
       }
     }
   } else {
-    char error_msg[1024];
-    sprintf(error_msg, "%sERROR: BAD USAGE%s\n", ANSI_COLOR_RED, ANSI_COLOR_RESET);
-    printf("%s",error_msg);
-    exit(1);
+    config.PORT = 8080;
   }
   //Create the socket file descriptor
   //File descriptor: Integer identifier to a file
@@ -248,6 +268,9 @@ int main(int argc, char *argv[])
       respond("index.html");
     } else { 
       char *stripped_uri = strip_uri(uri);
+      if (config.VERBOSE) {
+        printf("Stripped URI: %s\n", stripped_uri);
+      }
       respond(stripped_uri);
       free(stripped_uri);
     } 
