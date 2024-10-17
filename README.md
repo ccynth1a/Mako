@@ -1,4 +1,4 @@
-# Mako V1.0.0 
+# Mako V1.0.2
 
 ### Description
 Mako is a bare-bones web server written entirely in C. It can serve HTML, CSS, and theoretically .js, .png, .jpeg and even .mp4 files (these haven't been entirely tested yet). 
