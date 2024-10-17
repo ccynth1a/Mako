@@ -55,6 +55,7 @@ Verbose Printing can be configured using the -v flag. Verbose printing will incl
 If you have any issues with it, please don't make PRs, but please feel free to contact me
 
 Known Bugs:
+
     - Program may occasionally crash after about half an hour with SIGPIPE (141)
 
 ---
