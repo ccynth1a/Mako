@@ -1,5 +1,5 @@
 /* 
- * Mako: Version 1.1.1
+ * Mako: Version 1.1.2
  * Author: CCynth1a
  * Distribution: Feel free <3
  *
@@ -45,6 +45,9 @@ int main(int argc, char *argv[])
   log->line_enabled = false;
   log->function_enabled = false;
 
+  // Set default Port to 8080
+  config.PORT = 8080;
+
   /* ARG PARSING */ 
   if (argc >= 2) {
     while (true) {
@@ -70,11 +73,11 @@ int main(int argc, char *argv[])
   //Create the socket file descriptor
   //File descriptor: Integer identifier to a file
   socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0); //Create IPv4 TCP Socket
-  int opt = 1;
-  setsockopt(socket_file_descriptor, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+  int sock_opt = 1;
+  setsockopt(socket_file_descriptor, SOL_SOCKET, SO_REUSEADDR, &sock_opt, sizeof(sock_opt));
   if (socket_file_descriptor != -1) {
     char buffer[BUFFER_SIZE];
-    snprintf(buffer, BUFFER_SIZE, "Socket file descriptor created successfully\n%s", ANSI_COLOR_RESET);
+    snprintf(buffer, BUFFER_SIZE, "Socket file descriptor created successfully%s", ANSI_COLOR_RESET);
     LOG(log, INFO, buffer);
   } else {
     LOG(log, CRITICAL, "Failed to create Socket File Descriptor");
@@ -123,8 +126,8 @@ int main(int argc, char *argv[])
     char method[BUFFER_SIZE], uri[BUFFER_SIZE], version[BUFFER_SIZE]; //Method is GET, uri is the file requested, version is obviously the HTTP version
     sscanf(buffer, "%s %s %s", method, uri, version);
     //Give information about the client
-    snprintf(snbuffer, BUFFER_SIZE, "IP: %s\nPort: %u\n"
-           "%s %s %s\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), method, version, uri);
+    snprintf(snbuffer, BUFFER_SIZE, "IP: %s Port: %u\n"
+           "%s %s %s", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), method, version, uri);
     LOG(log, INFO, snbuffer);
 
     if (read_status < 0) {
@@ -137,7 +140,7 @@ int main(int argc, char *argv[])
       respond("index.html");
     } else { 
       char *stripped_uri = strip_uri(uri);
-      snprintf(snbuffer, BUFFER_SIZE, "Stripped URI: %s\n", stripped_uri);
+      snprintf(snbuffer, BUFFER_SIZE, "Stripped URI: %s", stripped_uri);
       LOG(log, DEBUG, snbuffer);
       respond(stripped_uri);
       free(stripped_uri);
@@ -163,10 +166,11 @@ void sigint_handler(int sig)
   if (connection_socket_file_descriptor != 0) {
     status2 = close(connection_socket_file_descriptor);
   }
+  /* NOTE: THIS PART HAS BEEN COMMENTED OUT AS IT IS ACTUALLY EXPECTED BEHAVIOUR.
   if (status1 == -1 || status2 == -1) {
     LOG(log, CRITICAL, "Failed to close socket file descriptor.");
     exit(1);
-  }
+  } */
   LOG(log, INFO, "SIGINT, files closed successfully");
   fflush(stdout);
   exit(0);
@@ -233,15 +237,18 @@ void respond(const char *file_path)
   } else {
     content_type = "application/octet-stream"; //Default to binary stream if no appropriate delivery method
   }
-  snprintf(snbuffer, BUFFER_SIZE, "Content Type: %s", content_type);
-  LOG(log, INFO, content_type);
   // File has been found successfully and content type has been worked out, create the header and prepare to send the file
   char header[BUFFER_SIZE];
   snprintf(header, BUFFER_SIZE, 
                         "HTTP/1.0 200 OK\r\n"
                         "Server: webserver-c\r\n"
                         "Content-type: %s\r\n\r\n", content_type);
-  LOG(log, INFO, header);
+  // Purely for clarity when printing, we use a different buffer for logging. This keeps each request isolated to a specific "paragraph"
+  snprintf(snbuffer, BUFFER_SIZE,
+                        "HTTP/1.0 200 OK\r\n"
+                        "Server: webserver-c\r\n"
+                        "Content-type: %s", content_type);
+  LOG(log, INFO, snbuffer);
   write(connection_socket_file_descriptor, header, strlen(header));
   
   char buffer[BUFFER_SIZE]; //Create buffer for sending the data
@@ -254,7 +261,7 @@ void respond(const char *file_path)
       return;
     }
   }
-  snprintf(snbuffer, BUFFER_SIZE, "Finished serving %s, closing file descriptor", file_path);
+  snprintf(snbuffer, BUFFER_SIZE, "Finished serving %s, closing file descriptor and request\n", file_path);
   LOG(log, INFO, snbuffer);
   close(file_descriptor);
 }
@@ -273,7 +280,7 @@ void init(struct sockaddr_in *host_addr, size_t host_addrlen)
       LOG(log, CRITICAL, "Unable to bind to socket");
       exit(1);
   }
-  snprintf(snbuffer, BUFFER_SIZE, "Bound on Port %d\n", config.PORT);
+  snprintf(snbuffer, BUFFER_SIZE, "Bound on Port %d", config.PORT);
   LOG(log, INFO, snbuffer);
                                                                                                                                          
   if (listen(socket_file_descriptor, SOMAXCONN) != 0) { //SOMAXCONN is the max number of connections that can be queued, default is 128 
@@ -281,7 +288,7 @@ void init(struct sockaddr_in *host_addr, size_t host_addrlen)
     exit(1);
   }
   //Now that we're listening, potential connections will build up in a queue
-  snprintf(snbuffer, BUFFER_SIZE, "Listening on Port %d...", config.PORT);
+  snprintf(snbuffer, BUFFER_SIZE, "Listening on Port %d...\n", config.PORT);
   LOG(log, INFO, snbuffer);
 }
 

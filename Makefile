@@ -1,6 +1,6 @@
 # compiler rules
 CC = gcc
-CFLAGS = -Wall -Wno-builtin-declaration-mismatch -Iinclude -Iinclude/extern_include
+CFLAGS = -Wall -Wno-builtin-declaration-mismatch -Wno-unused-but-set-variable -Iinclude -Iinclude/extern_include
 LDFLAGS = -Llib -ltimber
 
 # directories

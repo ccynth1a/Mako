@@ -1,4 +1,4 @@
-# Mako V1.1.1
+# Mako V1.1.2
 ## Index 
 [Description](#description)
 
@@ -48,6 +48,11 @@ Verbose Printing can be configured using the -v flag. Verbose printing will incl
 ```
 > mako -v
 ```
+
+---
+
+### Logging
+The logging is split into "paragraphs", where each paragraph is a seperate TCP connection. When a paragraph ends, a connection has been dealt with, this usually means one individual file.
 
 ---
 
