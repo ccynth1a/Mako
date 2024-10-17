@@ -1,3 +1,9 @@
+/* 
+ * Mako: Version 1.1.0
+ * Author: CCynth1a
+ * Distribution: Feel free <3
+ *
+*/
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -11,7 +17,6 @@
 #include "../include/main.h"
 #include "../include/extern_include/timber.h"
 
-//#define PORT 8080 //Defines the port being used as the tcp port
 #define BUFFER_SIZE 1024 //Buffer used throughout, so standardizing the value here
 
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -24,7 +29,9 @@
 
 //Global Vars
 int socket_file_descriptor = 0, connection_socket_file_descriptor = 0; //Set them to zero to flag them as uninitialised for the next function
+
 char snbuffer[BUFFER_SIZE]; // buffer for snprintf, overwritten constantly
+
 // set up a configuration struct
 struct configuration config;
 logger_t *log;
