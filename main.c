@@ -27,10 +27,10 @@ int socket_file_descriptor = 0, connection_socket_file_descriptor = 0; //Set the
 void sigint_handler(int sig)
 {
   int status1, status2;
-  if (socket_file_descriptor == 0) {
+  if (socket_file_descriptor > 0) {
     status1 = close(socket_file_descriptor);
   } 
-  if (connection_socket_file_descriptor == 0) {
+  if (connection_socket_file_descriptor > 0) {
     status2 = close(connection_socket_file_descriptor);
   }
   if (status1 == -1 || status2 == -1) {
