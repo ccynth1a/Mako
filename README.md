@@ -20,7 +20,7 @@ Place all necessary files for the website's functioning in a directory, for exam
 mako index.html page1.html style.css
 ```
 **Note that index.html is required, as the root of the directory is set to serve this file**
-Then simply run the executable, and the server should be created, waiting to serve the file. Due to my routers settings I have been unable to test whether the server works over a LAN network, but it has worked with localhost:8080
+Then simply run the executable, and the server should be created, waiting to serve the file. To stop the server, simply issue SIGINT (C-c) and automatic cleanup of resources will be handled.
 
 Port Number is configurable using the -p flag
 ```
