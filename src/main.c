@@ -97,6 +97,8 @@ int main(int argc, char *argv[])
 
   //Now we forever assign and handle the creation of new sockets for each of these connections 
   while (true) {
+    // New paragraph 
+    printf("%s──────────────────────────────────────────%s\n", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
     //Create a new socket to accept the incoming connection
     connection_socket_file_descriptor = accept(socket_file_descriptor, (struct sockaddr*)&host_addr, (socklen_t *)&host_addrlen);
     if (connection_socket_file_descriptor < 0) {
@@ -194,9 +196,6 @@ char *strip_uri(char *uri)
 // - Close the file descriptor
 void respond(const char *file_path)
 {
-  // New paragraph 
-  printf("%s──────────────────────────────────────────%s\n", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
-
   int file_descriptor = open(file_path, O_RDONLY); //Open a file in read only mode
   if (file_descriptor == -1) { //If Error, respond with 404, since its just the file not existing
     LOG(log, ERROR, "File not found, sending 404 response...");
@@ -292,120 +291,4 @@ void init(struct sockaddr_in *host_addr, size_t host_addrlen)
   snprintf(snbuffer, BUFFER_SIZE, "Listening on Port %d...", config.PORT);
   LOG(log, INFO, snbuffer);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
