@@ -1,7 +1,11 @@
-# Mako V1.1.0
-
+# Mako V1.1.1
+## Index 
+[Description](#description)
+[Compilation](#compilation)
+[Usage](#usage)
+[Issues](#issues)
 ### Description
-Mako is a bare-bones web server written entirely in C. I use it majoratively to test my personal web projects. My main goal is to make it fast and simple, cutting out the bloat that web servers written in other languages may have. Mako is actively maintained by myself, updates happen every couple of months when I get frustrated enough to add new features.
+Mako is a bare-bones web server written entirely in C, used majoratively to test my personal web projects. My main goal is to make it fast and simple, cutting out the bloat that web servers written in other languages may have. Mako is actively maintained by myself, updates happen every couple of months when I get frustrated enough to add new features.
 ### Compilation
 I'm sure to any developer it will be immediately obvious how to install this, but in case you don't:
 
@@ -34,5 +38,8 @@ Verbose Printing can be configured using the -v flag. Verbose printing will incl
 ```
 ### Issues
 If you have any issues with it, please don't make PRs, but please feel free to contact me
+
+Known Bugs:
+    - Program may occasionally crash after about half an hour with SIGPIPE (141)
 #### Credit
 Though a lot of this code has been heavily modified or is entirely original, I initially followed the tutorial found [here](https://towardsdev.com/crafting-a-simple-web-server-in-c-ebf4cbab1973).

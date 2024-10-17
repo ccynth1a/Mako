@@ -1,5 +1,5 @@
 /* 
- * Mako: Version 1.1.0
+ * Mako: Version 1.1.1
  * Author: CCynth1a
  * Distribution: Feel free <3
  *
@@ -207,6 +207,12 @@ void respond(const char *file_path)
   } 
   // Figuring out the content type
   const char *file_extension = strrchr(file_path, '.'); //Extract the file extension
+
+  // guards against files without an extension 
+  if (file_extension == NULL) {
+    return;
+  }
+
   const char *content_type;
   if (strcmp(file_extension, ".html") == 0) { // TODO: Make this NOT a mess. For now its ordered from what's probably most-least common
     content_type = "text/html";
