@@ -76,9 +76,7 @@ int main(int argc, char *argv[])
   int sock_opt = 1;
   setsockopt(socket_file_descriptor, SOL_SOCKET, SO_REUSEADDR, &sock_opt, sizeof(sock_opt));
   if (socket_file_descriptor != -1) {
-    char buffer[BUFFER_SIZE];
-    snprintf(buffer, BUFFER_SIZE, "Socket file descriptor created successfully%s", ANSI_COLOR_RESET);
-    LOG(log, INFO, buffer);
+    LOG(log, INFO, "Socket file descriptor created successfully");
   } else {
     LOG(log, CRITICAL, "Failed to create Socket File Descriptor");
     return 1;
@@ -196,6 +194,9 @@ char *strip_uri(char *uri)
 // - Close the file descriptor
 void respond(const char *file_path)
 {
+  // New paragraph 
+  printf("%s──────────────────────────────────────────%s\n", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
+
   int file_descriptor = open(file_path, O_RDONLY); //Open a file in read only mode
   if (file_descriptor == -1) { //If Error, respond with 404, since its just the file not existing
     LOG(log, ERROR, "File not found, sending 404 response...");
@@ -261,7 +262,7 @@ void respond(const char *file_path)
       return;
     }
   }
-  snprintf(snbuffer, BUFFER_SIZE, "Finished serving %s, closing file descriptor and request\n", file_path);
+  snprintf(snbuffer, BUFFER_SIZE, "Finished serving %s, closing file descriptor and request", file_path);
   LOG(log, INFO, snbuffer);
   close(file_descriptor);
 }
@@ -288,7 +289,7 @@ void init(struct sockaddr_in *host_addr, size_t host_addrlen)
     exit(1);
   }
   //Now that we're listening, potential connections will build up in a queue
-  snprintf(snbuffer, BUFFER_SIZE, "Listening on Port %d...\n", config.PORT);
+  snprintf(snbuffer, BUFFER_SIZE, "Listening on Port %d...", config.PORT);
   LOG(log, INFO, snbuffer);
 }
 
