@@ -21,6 +21,11 @@ mako index.html page1.html style.css
 ```
 **Note that index.html is required, as the root of the directory is set to serve this file**
 Then simply run the executable, and the server should be created, waiting to serve the file. Due to my routers settings I have been unable to test whether the server works over a LAN network, but it has worked with localhost:8080
+
+Port Number is configurable using the -p flag
+```
+> ./mako -p 8080
+```
 ### Issues
 If you have any issues with it, please don't make PRs, but please feel free to contact me
 

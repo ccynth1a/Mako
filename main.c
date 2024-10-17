@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#define PORT 8080 //Defines the port being used as the tcp port
+//#define PORT 8080 //Defines the port being used as the tcp port
 #define BUFFER_SIZE 1024 //Buffer used throughout, so standardizing the value here
 
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -22,19 +22,20 @@
 
 //Global Vars
 int socket_file_descriptor = 0, connection_socket_file_descriptor = 0; //Set them to zero to flag them as uninitialised for the next function
+int PORT;
 
 //When SIGINT is called, close all open File Descriptors and exit the program
 void sigint_handler(int sig)
 {
   int status1, status2;
-  if (socket_file_descriptor > 0) {
+  if (socket_file_descriptor != 0) {
     status1 = close(socket_file_descriptor);
   } 
-  if (connection_socket_file_descriptor > 0) {
+  if (connection_socket_file_descriptor != 0) {
     status2 = close(connection_socket_file_descriptor);
   }
   if (status1 == -1 || status2 == -1) {
-    char *error_msg;
+    char error_msg[1024];
     sprintf(error_msg, "%sERROR: (CLOSE)%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
     perror(error_msg);
     exit(1);
@@ -109,7 +110,7 @@ void respond(const char *file_path)
   while ((bytes_r = read(file_descriptor, buffer, sizeof(buffer))) > 0) { //Will continue as long as there are bytes to send
     bytes_s = write(connection_socket_file_descriptor, buffer, bytes_r); //Write the contents of the file
     if (bytes_s < 0) {
-      char *error_msg;
+      char error_msg[1024];
       sprintf(error_msg, "%sERROR: (WRITE)%s", ANSI_COLOR_RED, ANSI_COLOR_RESET); //format error message
       perror(error_msg);
       close(file_descriptor);
@@ -131,28 +132,53 @@ void init(struct sockaddr_in* host_addr, size_t host_addrlen)
 
   //Bind the socket 
   if (bind(socket_file_descriptor, (struct sockaddr*)host_addr, host_addrlen) != 0) {
-      char *error_msg;
+      char error_msg[1024];
       sprintf(error_msg, "%sERROR: (SOCKET BIND)%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
       perror(error_msg);
       exit(1);
   }
-  printf("%sBound on Port 8080\n%s", ANSI_COLOR_GREEN, ANSI_COLOR_RESET);
+  printf("%sBound on Port %d\n%s", ANSI_COLOR_GREEN, PORT, ANSI_COLOR_RESET);
                                                                                                                                          
   if (listen(socket_file_descriptor, SOMAXCONN) != 0) { //SOMAXCONN is the max number of connections that can be queued, default is 128 
-    char *error_msg;
+    char error_msg[1024];
     sprintf(error_msg, "%sERROR: (LISTEN)%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
     perror(error_msg);
     exit(1);
   }
   //Now that we're listening, potential connections will build up in a queue
-  printf("%sListening on Port 8080...\n%s", ANSI_COLOR_GREEN, ANSI_COLOR_RESET);
+  printf("%sListening on Port %d...\n%s", ANSI_COLOR_GREEN, PORT, ANSI_COLOR_RESET);
 }
 
 int main(int argc, char *argv[])
 {
+  /* ARG PARSING */ 
+  if (argc >= 2) {
+    while (true) {
+      int opt = getopt(argc, argv, "p:");
+      if (opt == -1) 
+        break;
+      switch (opt) {
+        case 'p':
+          PORT = atoi(optarg);
+          break;
+        default:
+          char error_msg[1024];
+          sprintf(error_msg, "%sERROR: BAD USAGE\n%s", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+          perror(error_msg);
+          exit(1);
+      }
+    }
+  } else {
+    char error_msg[1024];
+    sprintf(error_msg, "%sERROR: BAD USAGE%s\n", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+    printf("%s",error_msg);
+    exit(1);
+  }
   //Create the socket file descriptor
   //File descriptor: Integer identifier to a file
   socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0); //Create IPv4 TCP Socket
+  int opt = 1;
+  setsockopt(socket_file_descriptor, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
   if (socket_file_descriptor != -1) {
     printf("%sSocket file descriptor created successfully\n%s", ANSI_COLOR_GREEN, ANSI_COLOR_RESET);
   } else {
