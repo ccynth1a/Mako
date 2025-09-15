@@ -28,22 +28,51 @@
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
 //Global Vars
+static struct hash_t *hashtab[MAX_HASH_SIZE];
+
 int socket_file_descriptor = 0, connection_socket_file_descriptor = 0; //Set them to zero to flag them as uninitialised for the next function
 
 char snbuffer[BUFFER_SIZE]; // buffer for snprintf, overwritten constantly
 
 // set up a configuration struct
 struct configuration config;
-logger_t *log;
+logger_t *logger;
 
 int main(int argc, char *argv[])
 {
   // setting up timber debug logger 
-  log = malloc(sizeof(logger_t));
-  log_init(log, INFO, NULL);
+  logger = (logger_t *)malloc(sizeof(logger_t));
+  log_init(logger, INFO, NULL);
   
-  log->line_enabled = false;
-  log->function_enabled = false;
+  logger->line_enabled = false;
+  logger->function_enabled = false;
+
+  // Initialise Hash Table For Content Headers
+  char extensions[8][6] = {
+    ".html",
+    ".css",
+    ".js",
+    ".jpg",
+    ".png",
+    ".mp4",
+    ".mp3",
+    ".webm"
+  };
+
+  char content_type[8][32] = {
+    "text/html",
+    "text/css",
+    "application/javascript",
+    "image/jpeg",
+    "image/png",
+    "video/mp4",
+    "video/mpeg",
+    "video/webm"
+  };
+
+  for (int i = 0; i < sizeof(extensions) / sizeof(extensions[0]); i++) {
+    install(extensions[i], content_type[i]);
+  };
 
   // Set default Port to 8080
   config.PORT = 8080;
@@ -59,11 +88,11 @@ int main(int argc, char *argv[])
           config.PORT = atoi(optarg);
           break;
         case 'v':
-          log->line_enabled = true;
-          log->function_enabled = true;
+          logger->line_enabled = true;
+          logger->function_enabled = true;
           break;
         default:
-          LOG(log, CRITICAL, "Bad Usage");
+          LOG(logger, CRITICAL, "Bad Usage");
           exit(1);
       }
     }
@@ -76,9 +105,9 @@ int main(int argc, char *argv[])
   int sock_opt = 1;
   setsockopt(socket_file_descriptor, SOL_SOCKET, SO_REUSEADDR, &sock_opt, sizeof(sock_opt));
   if (socket_file_descriptor != -1) {
-    LOG(log, INFO, "Socket file descriptor created successfully");
+    LOG(logger, INFO, "Socket file descriptor created successfully");
   } else {
-    LOG(log, CRITICAL, "Failed to create Socket File Descriptor");
+    LOG(logger, CRITICAL, "Failed to create Socket File Descriptor");
     return 1;
   }
 
@@ -102,17 +131,17 @@ int main(int argc, char *argv[])
     //Create a new socket to accept the incoming connection
     connection_socket_file_descriptor = accept(socket_file_descriptor, (struct sockaddr*)&host_addr, (socklen_t *)&host_addrlen);
     if (connection_socket_file_descriptor < 0) {
-      LOG(log, ERROR, "Failed to accept TCP Connection");
+      LOG(logger, ERROR, "Failed to accept TCP Connection");
       //Reset the loop and handle the next client
       continue;
     }
-    LOG(log, INFO, "Accepted TCP Connection");
+    LOG(logger, INFO, "Accepted TCP Connection");
 
     //Get client information before reading
     int socket_name = getsockname(connection_socket_file_descriptor, (struct sockaddr*)&client_addr, (socklen_t*)&client_addrlen);
     //It might be empty for some reason
     if (socket_name < 0) {
-      LOG(log, CRITICAL, "Invalid Socket Name");
+      LOG(logger, CRITICAL, "Invalid Socket Name");
       exit(1);
     }
 
@@ -128,10 +157,10 @@ int main(int argc, char *argv[])
     //Give information about the client
     snprintf(snbuffer, BUFFER_SIZE, "IP: %s Port: %u\n"
            "%s %s %s", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), method, version, uri);
-    LOG(log, INFO, snbuffer);
+    LOG(logger, INFO, snbuffer);
 
     if (read_status < 0) {
-      LOG(log, ERROR, "Error reading from socket, handling next client in queue...");
+      LOG(logger, ERROR, "Error reading from socket, handling next client in queue...");
       continue; //If i cant read your request, you're getting skipped
     }
  
@@ -141,7 +170,7 @@ int main(int argc, char *argv[])
     } else { 
       char *stripped_uri = strip_uri(uri);
       snprintf(snbuffer, BUFFER_SIZE, "Stripped URI: %s", stripped_uri);
-      LOG(log, DEBUG, snbuffer);
+      LOG(logger, DEBUG, snbuffer);
       respond(stripped_uri);
       free(stripped_uri);
     } 
@@ -152,7 +181,7 @@ int main(int argc, char *argv[])
   close(socket_file_descriptor);
 
   // Free the memory allocated to timber logger 
-  log_kill(log);
+  log_kill(logger);
   return 0;
 }
 
@@ -171,7 +200,7 @@ void sigint_handler(int sig)
     LOG(log, CRITICAL, "Failed to close socket file descriptor.");
     exit(1);
   } */
-  LOG(log, INFO, "SIGINT, files closed successfully");
+  LOG(logger, INFO, "SIGINT, files closed successfully");
   fflush(stdout);
   exit(0);
 } 
@@ -198,14 +227,14 @@ void respond(const char *file_path)
 {
   int file_descriptor = open(file_path, O_RDONLY); //Open a file in read only mode
   if (file_descriptor == -1) { //If Error, respond with 404, since its just the file not existing
-    LOG(log, ERROR, "File not found, sending 404 response...");
+    LOG(logger, ERROR, "File not found, sending 404 response...");
     const char *header =  "HTTP/1.0 404 Not Found\r\n"
                           "Server: webserver-c\r\n"
                           "Content-type: text/html\r\n";
     const char *body = "<html><body>404 Not Found</body></html>\r\n";
     
     snprintf(snbuffer, BUFFER_SIZE, "%s%s", header, body);
-    LOG(log, DEBUG, snbuffer);
+    LOG(logger, DEBUG, snbuffer);
     write(connection_socket_file_descriptor, header, strlen(header));
     write(connection_socket_file_descriptor, body, strlen(body));
   } 
@@ -217,26 +246,15 @@ void respond(const char *file_path)
     return;
   }
 
+  // I FINALLY FIXED IT BITCHES
   const char *content_type;
-  if (strcmp(file_extension, ".html") == 0) { // TODO: Make this NOT a mess. For now its ordered from what's probably most-least common
-    content_type = "text/html";
-  } else if (strcmp(file_extension, ".css") == 0) {
-    content_type = "text/css";
-  } else if (strcmp(file_extension, ".js") == 0) {
-    content_type = "application/javascript";
-  } else if (strcmp(file_extension, ".jpg") == 0 || strcmp(file_extension, ".jpeg") == 0) {
-    content_type = "image/jpeg"; 
-  } else if (strcmp(file_extension, ".png") == 0) {
-    content_type = "image/png"; 
-  } else if (strcmp(file_extension, ".mp4") == 0) {
-    content_type = "video/mp4";
-  } else if (strcmp(file_extension, ".mp3") == 0) {
-    content_type = "video/mpeg";
-  } else if (strcmp(file_extension, ".webm") == 0) {
-    content_type = "video/webm";
+  struct hash_t *hp = lookup(file_extension);
+  if (hp == NULL || hp->defn == NULL) {
+    content_type = "application/octet-stream";
   } else {
-    content_type = "application/octet-stream"; //Default to binary stream if no appropriate delivery method
+    content_type = hp->defn;
   }
+
   // File has been found successfully and content type has been worked out, create the header and prepare to send the file
   char header[BUFFER_SIZE];
   snprintf(header, BUFFER_SIZE, 
@@ -248,7 +266,7 @@ void respond(const char *file_path)
                         "HTTP/1.0 200 OK\r\n"
                         "Server: webserver-c\r\n"
                         "Content-type: %s", content_type);
-  LOG(log, INFO, snbuffer);
+  LOG(logger, INFO, snbuffer);
   write(connection_socket_file_descriptor, header, strlen(header));
   
   char buffer[BUFFER_SIZE]; //Create buffer for sending the data
@@ -256,13 +274,13 @@ void respond(const char *file_path)
   while ((bytes_r = read(file_descriptor, buffer, BUFFER_SIZE)) > 0) { //Will continue as long as there are bytes to send
     bytes_s = write(connection_socket_file_descriptor, buffer, bytes_r); //Write the contents of the file
     if (bytes_s < 0) {
-      LOG(log, ERROR, "Unable to write to socket, closing file descriptor...");
+      LOG(logger, ERROR, "Unable to write to socket, closing file descriptor...");
       close(file_descriptor);
       return;
     }
   }
   snprintf(snbuffer, BUFFER_SIZE, "Finished serving %s, closing file descriptor and request", file_path);
-  LOG(log, INFO, snbuffer);
+  LOG(logger, INFO, snbuffer);
   close(file_descriptor);
 }
 
@@ -277,18 +295,58 @@ void init(struct sockaddr_in *host_addr, size_t host_addrlen)
 
   //Bind the socket 
   if (bind(socket_file_descriptor, (struct sockaddr*)host_addr, host_addrlen) != 0) {
-      LOG(log, CRITICAL, "Unable to bind to socket");
+      LOG(logger, CRITICAL, "Unable to bind to socket");
       exit(1);
   }
   snprintf(snbuffer, BUFFER_SIZE, "Bound on Port %d", config.PORT);
-  LOG(log, INFO, snbuffer);
+  LOG(logger, INFO, snbuffer);
                                                                                                                                          
   if (listen(socket_file_descriptor, SOMAXCONN) != 0) { //SOMAXCONN is the max number of connections that can be queued, default is 128 
-    LOG(log, CRITICAL, "Unable to listen on bound socket");
+    LOG(logger, CRITICAL, "Unable to listen on bound socket");
     exit(1);
   }
   //Now that we're listening, potential connections will build up in a queue
   snprintf(snbuffer, BUFFER_SIZE, "Listening on Port %d...", config.PORT);
-  LOG(log, INFO, snbuffer);
-}
+  LOG(logger, INFO, snbuffer);
+};
 
+unsigned int hash(const char *s)
+{
+  unsigned int hashval = 0;
+  for (; *s != '\0'; s++) {
+    hashval = *s + 31 * hashval;
+  }
+  return hashval % MAX_HASH_SIZE;
+};
+
+struct hash_t *lookup(const char *s)
+{
+  struct hash_t *hp;
+  for (hp = hashtab[hash(s)]; hp != NULL; hp = hp->next) {
+    if (strcmp(s, hp->name) == 0) {
+      return hp;
+    }
+  }
+  return NULL;
+};
+
+struct hash_t *install(const char *name, const char *defn)
+{
+  struct hash_t *hp;
+  unsigned int hashval;
+  if ((hp = lookup(name)) == NULL) {
+    hp = malloc(sizeof(*hp));
+    if (hp == NULL || (hp->name = strdup(name)) == NULL) {
+      return NULL;
+    }
+    hashval = hash(name);
+    hp->next = hashtab[hashval];
+    hashtab[hashval] = hp;
+  } else {
+    free(hp->defn);;
+  }
+  if ((hp->defn = strdup(defn)) == NULL) {
+    return NULL;
+  }
+  return hp;
+}
