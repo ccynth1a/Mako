@@ -11,13 +11,11 @@
 ---
 
 ### Description
-Mako is a bare-bones web server written entirely in C, used majoratively to test my personal web projects. My main goal is to make it fast and simple, cutting out the bloat that web servers written in other languages may have. Mako is actively maintained by myself, updates happen every couple of months when I get frustrated enough to add new features.
+Mako is a bare-bones web server written entirely in C, used majoratively to test my personal web projects. My main goal is to make it fast and simple. Mako is NOT actively maintained by myself, I only come back when I get frustrated enough to fix a bug.
 
 ---
 
 ### Compilation
-I'm sure to any developer it will be immediately obvious how to install this, but in case you don't:
-
 First, clone the repository into a new folder and cd into it.
 ```
 > git clone https://github.com/ccynth1a/Mako.git && cd Mako
